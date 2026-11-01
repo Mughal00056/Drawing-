@@ -47,6 +47,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -85,6 +86,7 @@ fun DrawingTopBar(
     onSave: () -> Unit,
     onShare: () -> Unit,
     onToggleScreenOverlay: () -> Unit,
+    onOpenSettings: () -> Unit,
     onToggleZenMode: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -242,6 +244,18 @@ fun DrawingTopBar(
                     Icon(
                         imageVector = Icons.Default.FitScreen,
                         contentDescription = "Zen Full Screen",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Screen Draw & Floating Settings
+                IconButton(
+                    onClick = onOpenSettings,
+                    modifier = Modifier.testTag("settings_screen_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Screen Draw Settings",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }

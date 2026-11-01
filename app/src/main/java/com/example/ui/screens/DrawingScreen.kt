@@ -71,6 +71,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun DrawingScreen(
     viewModel: DrawingViewModel = viewModel(),
+    onOpenSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -81,7 +82,7 @@ fun DrawingScreen(
     var showShapeDialog by remember { mutableStateOf(false) }
     var showStampDialog by remember { mutableStateOf(false) }
     var showOverlayPermissionDialog by remember { mutableStateOf(false) }
-    var isOverlayActive by remember { mutableStateOf(ScreenDrawOverlayService.isRunning) }
+    val isOverlayActive by com.example.overlay.ScreenOverlayManager.isRunningFlow.collectAsState()
 
     val view = LocalView.current
 
@@ -108,14 +109,12 @@ fun DrawingScreen(
     fun toggleScreenOverlay() {
         if (ScreenDrawOverlayService.isRunning) {
             ScreenDrawOverlayService.stop(context)
-            isOverlayActive = false
             Toast.makeText(context, "Floating Screen Pen stopped", Toast.LENGTH_SHORT).show()
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
                 showOverlayPermissionDialog = true
             } else {
                 ScreenDrawOverlayService.start(context)
-                isOverlayActive = true
                 Toast.makeText(
                     context,
                     "Floating Pen Active! Minimize to draw over any app or home screen.",
@@ -191,6 +190,7 @@ fun DrawingScreen(
                         viewModel.shareDrawing(context, w, h)
                     },
                     onToggleScreenOverlay = { toggleScreenOverlay() },
+                    onOpenSettings = onOpenSettings,
                     onToggleZenMode = { viewModel.toggleZenMode() }
                 )
             }
