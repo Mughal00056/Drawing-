@@ -47,6 +47,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -75,6 +76,7 @@ fun DrawingTopBar(
     uiState: DrawingUiState,
     canUndo: Boolean,
     canRedo: Boolean,
+    isOverlayActive: Boolean,
     onUndo: () -> Unit,
     onRedo: () -> Unit,
     onClear: () -> Unit,
@@ -82,6 +84,7 @@ fun DrawingTopBar(
     onOpenBgPicker: () -> Unit,
     onSave: () -> Unit,
     onShare: () -> Unit,
+    onToggleScreenOverlay: () -> Unit,
     onToggleZenMode: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -216,6 +219,18 @@ fun DrawingTopBar(
                         imageVector = Icons.Default.Share,
                         contentDescription = "Share",
                         tint = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
+                // Floating Screen Pen (Draw Over Any App)
+                IconButton(
+                    onClick = onToggleScreenOverlay,
+                    modifier = Modifier.testTag("floating_pen_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SmartDisplay,
+                        contentDescription = if (isOverlayActive) "Stop Screen Draw" else "Draw Over Other Apps",
+                        tint = if (isOverlayActive) Color(0xFF10B981) else MaterialTheme.colorScheme.primary
                     )
                 }
 

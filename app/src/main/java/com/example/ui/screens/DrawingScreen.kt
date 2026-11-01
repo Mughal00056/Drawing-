@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -22,15 +25,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloseFullscreen
-import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -53,9 +54,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.model.SymmetryMode
+import com.example.overlay.ScreenDrawOverlayService
 import com.example.ui.components.BackgroundSelectorDialog
 import com.example.ui.components.ColorPickerDialog
 import com.example.ui.components.DrawingBottomDock
@@ -79,9 +80,9 @@ fun DrawingScreen(
 
     var showShapeDialog by remember { mutableStateOf(false) }
     var showStampDialog by remember { mutableStateOf(false) }
+    var showOverlayPermissionDialog by remember { mutableStateOf(false) }
+    var isOverlayActive by remember { mutableStateOf(ScreenDrawOverlayService.isRunning) }
 
-    // Screen dimensions for export
-    val density = LocalDensity.current
     val view = LocalView.current
 
     // Listen to ViewModel events (Toasts, Share intents)
@@ -103,7 +104,28 @@ fun DrawingScreen(
         }
     }
 
-    // BackHandler: If in Zen mode, back exits Zen mode; if has drawings, can undo or confirm
+    // Toggle screen draw overlay
+    fun toggleScreenOverlay() {
+        if (ScreenDrawOverlayService.isRunning) {
+            ScreenDrawOverlayService.stop(context)
+            isOverlayActive = false
+            Toast.makeText(context, "Floating Screen Pen stopped", Toast.LENGTH_SHORT).show()
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
+                showOverlayPermissionDialog = true
+            } else {
+                ScreenDrawOverlayService.start(context)
+                isOverlayActive = true
+                Toast.makeText(
+                    context,
+                    "Floating Pen Active! Minimize to draw over any app or home screen.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    // BackHandler: If in Zen mode, back exits Zen mode; if has drawings, can undo
     BackHandler(enabled = uiState.isZenMode || viewModel.canUndo) {
         if (uiState.isZenMode) {
             viewModel.toggleZenMode()
@@ -143,6 +165,7 @@ fun DrawingScreen(
                     uiState = uiState,
                     canUndo = viewModel.canUndo,
                     canRedo = viewModel.canRedo,
+                    isOverlayActive = isOverlayActive,
                     onUndo = { viewModel.undo() },
                     onRedo = { viewModel.redo() },
                     onClear = { viewModel.showClearConfirmDialog(true) },
@@ -167,6 +190,7 @@ fun DrawingScreen(
                         val h = view.height.takeIf { it > 0 } ?: 1920
                         viewModel.shareDrawing(context, w, h)
                     },
+                    onToggleScreenOverlay = { toggleScreenOverlay() },
                     onToggleZenMode = { viewModel.toggleZenMode() }
                 )
             }
@@ -290,6 +314,56 @@ fun DrawingScreen(
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.showClearConfirmDialog(false) }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Overlay Permission Explanation Dialog
+    if (showOverlayPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showOverlayPermissionDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.SmartDisplay,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Screen Draw Permission")
+                }
+            },
+            text = {
+                Text(
+                    text = "Phone ki screen par aur doosri apps (WhatsApp, YouTube, etc.) ke upar draw karne ke liye 'Display over other apps' permission zaroori hai.\n\n'Open Settings' par tap karke allow karein."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showOverlayPermissionDialog = false
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            try {
+                                val intent = Intent(
+                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                    Uri.parse("package:${context.packageName}")
+                                )
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+                                context.startActivity(intent)
+                            }
+                        }
+                    }
+                ) {
+                    Text("Open Settings")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showOverlayPermissionDialog = false }) {
                     Text("Cancel")
                 }
             }
