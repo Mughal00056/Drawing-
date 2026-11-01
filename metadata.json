@@ -1,0 +1,6 @@
+{
+  "name": "Tap & Draw",
+  "description": "An interactive drawing and sketching app to tap, doodle, and paint anywhere on the screen with vibrant brushes, colors, and effects.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
